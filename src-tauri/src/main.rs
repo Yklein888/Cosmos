@@ -27,6 +27,13 @@ fn main() {
             commands::get_projects,
             commands::save_memory,
             commands::get_memory,
+            commands::check_claude_cli,
+            commands::send_message_to_claude,
+            commands::stream_claude_response,
+            commands::create_conversation,
+            commands::get_conversations,
+            commands::get_conversation_messages,
+            commands::add_message_to_conversation,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
