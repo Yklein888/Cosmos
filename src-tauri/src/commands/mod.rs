@@ -4,6 +4,7 @@ pub mod memory;
 pub mod claude;
 pub mod conversations;
 pub mod terminal;
+pub mod agents;
 
 pub use greet::greet;
 pub use projects::create_project;
@@ -18,3 +19,13 @@ pub use conversations::{
     add_message_to_conversation,
 };
 pub use terminal::{execute_terminal_command, list_directory, get_working_directory};
+pub use agents::{
+    get_all_agents,
+    get_agent,
+    save_agent_memory,
+    get_agent_memories,
+    get_project_memories,
+    search_memories,
+    delete_memory,
+    switch_project_context,
+};

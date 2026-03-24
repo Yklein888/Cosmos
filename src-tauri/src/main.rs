@@ -37,6 +37,14 @@ fn main() {
             commands::execute_terminal_command,
             commands::list_directory,
             commands::get_working_directory,
+            commands::get_all_agents,
+            commands::get_agent,
+            commands::save_agent_memory,
+            commands::get_agent_memories,
+            commands::get_project_memories,
+            commands::search_memories,
+            commands::delete_memory,
+            commands::switch_project_context,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
