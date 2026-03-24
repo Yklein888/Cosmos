@@ -2,11 +2,12 @@ import { useState } from 'react'
 import ProjectTabBar from '../layout/ProjectTabBar'
 import ChatView from '../chat/ChatView'
 import TerminalView from '../terminal/TerminalView'
+import McpMarketplace from '../mcp/McpMarketplace'
 import { useProjectStore } from '../../store/useProjectStore'
 import './V2Layout.css'
 
 export default function V2Layout() {
-  const [activeTab, setActiveTab] = useState<'chat' | 'terminal'>('chat')
+  const [activeTab, setActiveTab] = useState<'chat' | 'terminal' | 'mcp'>('chat')
   const activeProject = useProjectStore((state) => state.getActiveProject())
 
   return (
@@ -27,6 +28,12 @@ export default function V2Layout() {
           >
             🖥️ Terminal
           </button>
+          <button
+            className={`tab-button ${activeTab === 'mcp' ? 'active' : ''}`}
+            onClick={() => setActiveTab('mcp')}
+          >
+            🏪 MCP
+          </button>
         </div>
 
         <div className="view-container">
@@ -34,10 +41,11 @@ export default function V2Layout() {
           {activeTab === 'terminal' && (
             <TerminalView projectPath={activeProject?.path} />
           )}
+          {activeTab === 'mcp' && <McpMarketplace />}
         </div>
       </div>
 
-      {!activeProject && (
+      {!activeProject && activeTab !== 'mcp' && (
         <div className="empty-state">
           <h2>No Project Selected</h2>
           <p>Create or select a project to get started</p>
