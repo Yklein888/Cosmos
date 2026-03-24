@@ -3,6 +3,7 @@ pub mod projects;
 pub mod memory;
 pub mod claude;
 pub mod conversations;
+pub mod terminal;
 
 pub use greet::greet;
 pub use projects::create_project;
@@ -16,3 +17,4 @@ pub use conversations::{
     get_conversation_messages,
     add_message_to_conversation,
 };
+pub use terminal::{execute_terminal_command, list_directory, get_working_directory};

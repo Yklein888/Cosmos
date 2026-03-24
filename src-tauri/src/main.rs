@@ -34,6 +34,9 @@ fn main() {
             commands::get_conversations,
             commands::get_conversation_messages,
             commands::add_message_to_conversation,
+            commands::execute_terminal_command,
+            commands::list_directory,
+            commands::get_working_directory,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

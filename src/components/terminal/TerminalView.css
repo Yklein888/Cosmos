@@ -1,0 +1,85 @@
+.terminal-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0a0e27;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.terminal-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+}
+
+.terminal-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+.terminal-input-bar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.5);
+  border-top: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.terminal-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 4px;
+  color: #c7d2fe;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+}
+
+.terminal-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.terminal-send-btn {
+  padding: 0.5rem 0.75rem;
+  background: #6366f1;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.terminal-send-btn:hover {
+  background: #4f46e5;
+}
+
+/* Customize xterm.js scrollbar */
+.terminal-container .xterm-screen {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.3) rgba(0, 0, 0, 0.3);
+}
+
+.terminal-container .xterm-screen::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-container .xterm-screen::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.terminal-container .xterm-screen::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 4px;
+}
+
+.terminal-container .xterm-screen::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}
