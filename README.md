@@ -4,9 +4,12 @@
 
 A powerful desktop application built with Tauri + React that provides a unified development environment with five specialized AI agents, project management, terminal integration, task scheduling, and MCP marketplace.
 
-![Status](https://img.shields.io/badge/Status-Phase%207%20Complete-success)
-![Version](https://img.shields.io/badge/Version-0.1.0-blue)
-![License](https://img.shields.io/badge/License-MIT-green)
+[![Status](https://img.shields.io/badge/Status-v0.1.0%20Complete-success?style=flat-square)](https://github.com/yklein888/cosmos)
+[![Version](https://img.shields.io/badge/Version-0.1.0-blue?style=flat-square)](https://github.com/yklein888/cosmos/releases)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![GitHub Issues](https://img.shields.io/github/issues/yklein888/cosmos?style=flat-square)](https://github.com/yklein888/cosmos/issues)
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010%2B-blue?style=flat-square)](#)
+[![Built with Tauri](https://img.shields.io/badge/Built%20with-Tauri%202.0-24C8D8?style=flat-square)](https://tauri.app/)
 
 ## 🎯 Vision
 
