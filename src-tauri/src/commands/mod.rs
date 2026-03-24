@@ -5,6 +5,7 @@ pub mod claude;
 pub mod conversations;
 pub mod terminal;
 pub mod agents;
+pub mod tasks;
 
 pub use greet::greet;
 pub use projects::create_project;
@@ -29,3 +30,4 @@ pub use agents::{
     delete_memory,
     switch_project_context,
 };
+pub use tasks::{create_task, get_project_tasks, execute_task, get_task_results, toggle_task, delete_task};

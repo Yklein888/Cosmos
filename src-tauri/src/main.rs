@@ -45,6 +45,12 @@ fn main() {
             commands::search_memories,
             commands::delete_memory,
             commands::switch_project_context,
+            commands::create_task,
+            commands::get_project_tasks,
+            commands::execute_task,
+            commands::get_task_results,
+            commands::toggle_task,
+            commands::delete_task,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
