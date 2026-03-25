@@ -53,7 +53,7 @@ linux:
   category: Development
 
 publish:
-  - provider: github
-    owner: Yklein888
-    repo: Cosmos
-    releaseType: release
+  provider: github
+  owner: Yklein888
+  repo: Cosmos
+  releaseType: release
