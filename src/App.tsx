@@ -5,6 +5,7 @@ import { useConversationStore } from './store/useConversationStore'
 import { useAppStore } from './store/useAppStore'
 import { useTaskStore } from './store/useTaskStore'
 import { useLicenseStore } from './store/useLicenseStore'
+import { useGlobalAgentStore } from './store/useGlobalAgentStore'
 import { UpdateNotification } from './components/UpdateNotification'
 import { api } from './api'
 import { loadPmModule } from './lib/pm'
@@ -21,6 +22,7 @@ export default function App() {
   const loadSettings = useAppStore((s) => s.loadSettings)
   const setupStatus = useAppStore((s) => s.setupStatus)
   const checkDependencies = useAppStore((s) => s.checkDependencies)
+  const globalAgents = useGlobalAgentStore((s) => s.globalAgents)
   const isAuthenticated = useLicenseStore((s) => s.isAuthenticated)
   const authLoaded = useLicenseStore((s) => s.authLoaded)
   const workspaceSetupLoaded = useAppStore((s) => s.workspaceSetupLoaded)
@@ -79,6 +81,10 @@ export default function App() {
       api.menu.setActiveProject(null)
     }
   }, [activeProjectPath])
+
+  useEffect(() => {
+    useProjectStore.getState().refreshOpenProjectAgents()
+  }, [globalAgents])
 
   // Listen for menu actions from main process
   useEffect(() => {

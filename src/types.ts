@@ -12,6 +12,7 @@ export interface ProjectSettings {
   mode: ProjectMode      // default 'solo'
   agents: AgentDefinition[] // default []
   mcpServers: McpServer[]   // default []
+  disabledGlobalAgentIds?: string[] // IDs of global agents disabled in this project
 }
 
 // ── Claude CLI Event Types ──
@@ -192,6 +193,8 @@ export interface AgentDefinition {
   personality: string  // system prompt personality text
   expertise: string[]  // e.g. ['implementation', 'debugging']
   capabilities?: AgentCapabilities
+  enabled?: boolean    // whether this agent is active globally
+  description?: string // optional description
 }
 
 export type ProjectMode = 'solo' | 'team'
@@ -578,6 +581,7 @@ export interface ElectronAPI {
   }
   updater: {
     install: () => Promise<void>
+    checkForUpdates: () => Promise<void>
     onStatus: (callback: (data: UpdateStatusEvent) => void) => () => void
   }
   shell: {

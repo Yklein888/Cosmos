@@ -3,6 +3,7 @@ import { api } from '../api'
 import { useConversationStore } from './useConversationStore'
 import { useAppStore, type AppView } from './useAppStore'
 import { useLicenseStore } from './useLicenseStore'
+import { useGlobalAgentStore } from './useGlobalAgentStore'
 import type { Project, Conversation, ConversationMessage, ContentBlock, ClaudeEvent, ProjectMode, AgentDefinition, McpServer, McpServerStdio, ImageAttachment, ToolUseBlock, ToolResultBlock } from '../types'
 
 /** Migration map: old fake @anthropic/* MCP packages → real npm packages */
@@ -103,11 +104,8 @@ interface ProjectStore {
   setProjectModel: (model: string) => void
   setProjectPermissionMode: (mode: string) => void
   setProjectMode: (mode: ProjectMode) => void
-  setProjectAgents: (agents: AgentDefinition[]) => void
-  addProjectAgent: (agent: AgentDefinition) => void
-  removeProjectAgent: (id: string) => void
-  updateProjectAgent: (id: string, updates: Partial<AgentDefinition>) => void
   toggleDisabledGlobalAgent: (agentId: string) => void
+  refreshOpenProjectAgents: () => void
   setProjectMcpServers: (servers: McpServer[]) => void
   addProjectMcpServer: (server: McpServer) => void
   removeProjectMcpServer: (id: string) => void
@@ -173,6 +171,45 @@ function restoreConversationSnapshot(snapshot: ConversationSnapshot): void {
     exitPlanMode: null,
     processLogs: [],
   })
+}
+
+function normalizeLegacyAgent(agent: unknown): AgentDefinition | null {
+  if (!agent || typeof agent !== 'object') return null
+
+  const record = agent as Record<string, unknown>
+  const id = typeof record.id === 'string' ? record.id : ''
+  const name = typeof record.name === 'string' ? record.name : ''
+  const role = typeof record.role === 'string' ? record.role : ''
+  if (!id || !name || !role) return null
+
+  const expertise = Array.isArray(record.expertise)
+    ? record.expertise.filter((item): item is string => typeof item === 'string')
+    : []
+
+  return {
+    id,
+    name,
+    icon: typeof record.icon === 'string'
+      ? record.icon
+      : typeof record.emoji === 'string'
+        ? record.emoji
+        : 'lucide:bot',
+    color: typeof record.color === 'string' ? record.color : 'blue',
+    role,
+    personality: typeof record.personality === 'string' ? record.personality : '',
+    expertise,
+    capabilities: record.capabilities && typeof record.capabilities === 'object'
+      ? record.capabilities as AgentDefinition['capabilities']
+      : undefined,
+    enabled: typeof record.enabled === 'boolean' ? record.enabled : true,
+    description: typeof record.description === 'string' ? record.description : undefined,
+  }
+}
+
+function getResolvedProjectAgents(disabledGlobalAgentIds: Set<string>): AgentDefinition[] {
+  return useGlobalAgentStore.getState()
+    .getGlobalAgents()
+    .filter((agent) => !disabledGlobalAgentIds.has(agent.id))
 }
 
 // ── Phase 1: Background event processing ──────────────────────────────
@@ -532,6 +569,21 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     // Get per-project settings
     const settings = await api.projects.getSettings(dirPath)
 
+    // Migrate legacy project-local agents into the global registry once.
+    const legacyAgents = Array.isArray(settings.agents)
+      ? settings.agents
+          .map((agent) => normalizeLegacyAgent(agent))
+          .filter((agent): agent is AgentDefinition => !!agent)
+      : []
+    if (legacyAgents.length > 0) {
+      useGlobalAgentStore.getState().importAgents(legacyAgents)
+      try {
+        await api.projects.setSettings(dirPath, { agents: [] })
+      } catch {
+        // Ignore migration persistence failures; the app can still run.
+      }
+    }
+
     // Auto-migrate old fake MCP package names to real ones
     if (settings.mcpServers && migrateMcpServers(settings.mcpServers)) {
       api.projects.setSettings(dirPath, { mcpServers: settings.mcpServers })
@@ -556,7 +608,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       model: settings.model || 'sonnet',
       permissionMode: settings.permissionMode || 'bypass',
       mode: settings.mode || 'solo',
-      agents: settings.agents || [],
+      agents: getResolvedProjectAgents(new Set(settings.disabledGlobalAgentIds || [])),
       mcpServers: settings.mcpServers || [],
       disabledGlobalAgentIds: new Set(settings.disabledGlobalAgentIds || []),
       draftText: '',
@@ -699,6 +751,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
     set({ openProjects, activeProjectPath: dirPath })
 
+    // Ensure the active tab's resolved agents reflect the current global registry.
+    get().refreshOpenProjectAgents()
+
     // If no snapshot, load conversations from DB (after setting activeProjectPath
     // so that createConversation etc. use the correct project)
     if (!tab?.snapshot) {
@@ -749,67 +804,6 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     api.projects.setSettings(dirPath, { mode })
   },
 
-  setProjectAgents: (agents: AgentDefinition[]) => {
-    const state = get()
-    if (!state.activeProjectPath) return
-    const dirPath = state.activeProjectPath
-    const flags = useLicenseStore.getState().flags
-    const clamped = agents.slice(0, flags.maxAgents)
-    set({
-      openProjects: state.openProjects.map((p) =>
-        p.projectPath === dirPath ? { ...p, agents: clamped } : p
-      ),
-    })
-    api.projects.setSettings(dirPath, { agents: clamped })
-  },
-
-  addProjectAgent: (agent: AgentDefinition) => {
-    const state = get()
-    if (!state.activeProjectPath) return
-    const dirPath = state.activeProjectPath
-    const tab = state.openProjects.find((p) => p.projectPath === dirPath)
-    if (!tab) return
-    const flags = useLicenseStore.getState().flags
-    if (tab.agents.length >= flags.maxAgents) return
-    const agents = [...tab.agents, agent]
-    set({
-      openProjects: state.openProjects.map((p) =>
-        p.projectPath === dirPath ? { ...p, agents } : p
-      ),
-    })
-    api.projects.setSettings(dirPath, { agents })
-  },
-
-  removeProjectAgent: (id: string) => {
-    const state = get()
-    if (!state.activeProjectPath) return
-    const dirPath = state.activeProjectPath
-    const tab = state.openProjects.find((p) => p.projectPath === dirPath)
-    if (!tab) return
-    const agents = tab.agents.filter((a) => a.id !== id)
-    set({
-      openProjects: state.openProjects.map((p) =>
-        p.projectPath === dirPath ? { ...p, agents } : p
-      ),
-    })
-    api.projects.setSettings(dirPath, { agents })
-  },
-
-  updateProjectAgent: (id: string, updates: Partial<AgentDefinition>) => {
-    const state = get()
-    if (!state.activeProjectPath) return
-    const dirPath = state.activeProjectPath
-    const tab = state.openProjects.find((p) => p.projectPath === dirPath)
-    if (!tab) return
-    const agents = tab.agents.map((a) => (a.id === id ? { ...a, ...updates } : a))
-    set({
-      openProjects: state.openProjects.map((p) =>
-        p.projectPath === dirPath ? { ...p, agents } : p
-      ),
-    })
-    api.projects.setSettings(dirPath, { agents })
-  },
-
   toggleDisabledGlobalAgent: (agentId: string) => {
     const state = get()
     if (!state.activeProjectPath) return
@@ -824,10 +818,24 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     }
     set({
       openProjects: state.openProjects.map((p) =>
-        p.projectPath === dirPath ? { ...p, disabledGlobalAgentIds: newDisabled } : p
+        p.projectPath === dirPath
+          ? { ...p, disabledGlobalAgentIds: newDisabled, agents: getResolvedProjectAgents(newDisabled) }
+          : p
       ),
     })
     api.projects.setSettings(dirPath, { disabledGlobalAgentIds: Array.from(newDisabled) })
+  },
+
+  refreshOpenProjectAgents: () => {
+    const state = get()
+    if (state.openProjects.length === 0) return
+
+    set({
+      openProjects: state.openProjects.map((project) => ({
+        ...project,
+        agents: getResolvedProjectAgents(project.disabledGlobalAgentIds),
+      })),
+    })
   },
 
   setProjectMcpServers: (mcpServers: McpServer[]) => {

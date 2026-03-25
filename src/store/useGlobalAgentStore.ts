@@ -18,6 +18,9 @@ interface GlobalAgentStore {
   // Add custom global agent
   addCustomGlobalAgent: (agent: AgentDefinition) => void
 
+  // Merge legacy agents from project-local settings into the global registry
+  importAgents: (agents: AgentDefinition[]) => void
+
   // Remove custom global agent
   removeCustomGlobalAgent: (agentId: string) => void
 
@@ -78,6 +81,19 @@ export const useGlobalAgentStore = create<GlobalAgentStore>((set, get) => ({
     get().saveToStorage()
   },
 
+  importAgents: (agents: AgentDefinition[]) => {
+    if (agents.length === 0) return
+
+    set((state) => {
+      const newMap = new Map(state.globalAgents)
+      for (const agent of agents) {
+        newMap.set(agent.id, { ...agent, enabled: agent.enabled ?? true })
+      }
+      return { globalAgents: newMap }
+    })
+    get().saveToStorage()
+  },
+
   removeCustomGlobalAgent: (agentId: string) => {
     set((state) => {
       const newMap = new Map(state.globalAgents)
@@ -105,7 +121,7 @@ export const useGlobalAgentStore = create<GlobalAgentStore>((set, get) => ({
         // Override with stored values
         if (storedAgents) {
           Object.entries(storedAgents).forEach(([id, agent]: any) => {
-            agentsMap.set(id, agent)
+            agentsMap.set(id, { ...agent, enabled: agent.enabled ?? true })
           })
         }
 

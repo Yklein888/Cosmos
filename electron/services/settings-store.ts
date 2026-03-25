@@ -29,6 +29,7 @@ interface ProjectSettings {
     enabled: boolean
     config: Record<string, unknown>
   }>
+  disabledGlobalAgentIds?: string[]
 }
 
 interface Settings {
@@ -54,6 +55,7 @@ const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   mode: 'solo',
   agents: [],
   mcpServers: [],
+  disabledGlobalAgentIds: [],
 }
 
 export class SettingsStore {

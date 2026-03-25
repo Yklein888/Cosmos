@@ -10,6 +10,7 @@ import { FormSelect } from '../components/FormSelect'
 import { FormTextarea } from '../components/FormTextarea'
 import { FormToggle } from '../components/FormToggle'
 import { AddAgentDialog } from '../AddAgentDialog'
+import { useGlobalAgentStore } from '../../../store/useGlobalAgentStore'
 import { useProjectStore } from '../../../store/useProjectStore'
 import { useLicenseStore } from '../../../store/useLicenseStore'
 import type { AgentDefinition, AgentCapabilities, ResponseFormat, McpServer } from '../../../types'
@@ -688,57 +689,23 @@ export default function ConfigPage() {
     const path = s.activeProjectPath
     return s.openProjects.find((p) => p.projectPath === path)
   })
-  const addAgent = useProjectStore((s) => s.addProjectAgent)
-  const removeAgent = useProjectStore((s) => s.removeProjectAgent)
-  const updateAgent = useProjectStore((s) => s.updateProjectAgent)
-  const flags = useLicenseStore((s) => s.flags)
-
-  const agents = activeTab?.agents || []
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(agents[0]?.id || null)
+  const toggleDisabledGlobalAgent = useProjectStore((s) => s.toggleDisabledGlobalAgent)
+  const globalAgents = useGlobalAgentStore((s) => s.getGlobalAgents())
   const [searchQuery, setSearchQuery] = useState('')
-  const [addDialogOpen, setAddDialogOpen] = useState(false)
 
-  const selectedAgent = agents.find((a) => a.id === selectedAgentId)
-  const filteredAgents = agents.filter((a) =>
-    a.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const disabledGlobalAgentIds = activeTab?.disabledGlobalAgentIds || new Set<string>()
+  const enabledCount = globalAgents.filter((agent) => !disabledGlobalAgentIds.has(agent.id)).length
+  const disabledCount = globalAgents.length - enabledCount
 
-  // Per-agent analytics
-  const allEntries = useAnalyticsStore((s) => s.entries)
-  const agentStats = useMemo(() => {
-    if (!selectedAgent) return null
-    const entries = allEntries.filter((e) => e.agentName === selectedAgent.name)
-    if (entries.length === 0) return null
-    const successCount = entries.filter((e) => e.success).length
-    const successRate = Math.round((successCount / entries.length) * 100)
-    const avgTime = entries.reduce((sum, e) => sum + e.durationMs, 0) / entries.length
-    const totalTokens = entries.reduce((sum, e) => sum + e.tokens, 0)
-    return { sessions: entries.length, successRate, avgTime, totalTokens }
-  }, [selectedAgent, allEntries])
-
-  const atLimit = Number.isFinite(flags.maxAgents) && agents.length >= flags.maxAgents
-  const canAddAgent = !!activeTab && !atLimit
-
-  // Listen for header "New Agent" button
-  const openAddDialog = useCallback(() => {
-    if (canAddAgent) setAddDialogOpen(true)
-  }, [canAddAgent])
-
-  useEffect(() => {
-    window.addEventListener('cosmos:new-agent', openAddDialog)
-    return () => window.removeEventListener('cosmos:new-agent', openAddDialog)
-  }, [openAddDialog])
-
-  const handleAddAgent = (agent: AgentDefinition) => {
-    addAgent(agent)
-    setSelectedAgentId(agent.id)
-  }
-
-  const handleUpdateAgent = (updates: Partial<AgentDefinition>) => {
-    if (selectedAgentId) {
-      updateAgent(selectedAgentId, updates)
-    }
-  }
+  const filteredAgents = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return globalAgents
+    return globalAgents.filter((agent) =>
+      agent.name.toLowerCase().includes(query) ||
+      agent.role.toLowerCase().includes(query) ||
+      agent.expertise.some((skill) => skill.toLowerCase().includes(query))
+    )
+  }, [globalAgents, searchQuery])
 
   if (!activeProjectPath || !activeTab) {
     return (
@@ -746,183 +713,96 @@ export default function ConfigPage() {
         <div className="text-center">
           <Icon icon="lucide:bot" className="text-zinc-800 text-3xl mb-3" />
           <h3 className="text-sm font-medium text-zinc-500 mb-1">No project open</h3>
-          <p className="text-xs text-zinc-600">Open a project to configure agents</p>
+          <p className="text-xs text-zinc-600">Open a project to manage agent availability</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 flex overflow-hidden">
-      {/* Agent List Sidebar */}
-      <div className="w-72 border-r border-cosmos-border bg-cosmos-bg flex flex-col flex-shrink-0">
-        <div className="p-3 space-y-2">
-          <div className="relative">
-            <Icon icon="lucide:search" className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-xs" />
-            <input
-              type="text"
-              placeholder="Search agents..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 bg-cosmos-card border border-cosmos-border rounded-lg text-xs text-white placeholder-zinc-600 outline-none focus:border-cosmos-accent"
-            />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="px-6 py-4 border-b border-cosmos-border bg-cosmos-bg/80 backdrop-blur-sm">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-white">Project Agents</h2>
+            <p className="text-xs text-zinc-500 mt-1">
+              Global agents are managed in Settings. Disable any of them for this project only.
+            </p>
           </div>
-          <button
-            onClick={() => setAddDialogOpen(true)}
-            disabled={!canAddAgent}
-            className={`w-full flex items-center justify-center gap-2 px-3 py-2 bg-cosmos-card border border-cosmos-border rounded-lg text-xs font-medium transition-colors ${
-              canAddAgent ? 'hover:border-zinc-600 text-zinc-300' : 'opacity-50 cursor-not-allowed text-zinc-600'
-            }`}
-          >
-            <Icon icon="lucide:plus" className="text-xs" />
-            New Agent
-          </button>
-          {atLimit && (
-            <p className="text-[10px] text-zinc-600 text-center mt-1">Agent limit reached ({flags.maxAgents})</p>
-          )}
-        </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-2 space-y-0.5">
-          {filteredAgents.map((agent) => (
-            <AgentListItem
-              key={agent.id}
-              agent={agent}
-              isSelected={selectedAgentId === agent.id}
-              onClick={() => setSelectedAgentId(agent.id)}
-            />
-          ))}
-          {filteredAgents.length === 0 && (
-            <div className="p-4 text-center">
-              <p className="text-[10px] text-zinc-600">No agents found</p>
-            </div>
-          )}
+          <div className="flex items-center gap-2 text-xs text-zinc-500">
+            <span className="px-2 py-1 rounded-full bg-zinc-800/70 border border-cosmos-border">
+              {enabledCount} enabled
+            </span>
+            <span className="px-2 py-1 rounded-full bg-zinc-800/70 border border-cosmos-border">
+              {disabledCount} disabled
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Config Form */}
-      {selectedAgent ? (
-        <AgentForm
-          agent={selectedAgent}
-          onUpdate={handleUpdateAgent}
-          onDelete={() => {
-            removeAgent(selectedAgent.id)
-            setSelectedAgentId(agents.find((a) => a.id !== selectedAgent.id)?.id || null)
-          }}
-          mcpServers={activeTab?.mcpServers || []}
-        />
-      ) : (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Icon icon="lucide:user-cog" className="text-zinc-800 text-3xl mb-3" />
-            <h3 className="text-sm font-medium text-zinc-500 mb-1">Select an agent</h3>
-            <p className="text-xs text-zinc-600">Choose an agent from the list to configure</p>
-          </div>
-        </div>
-      )}
-
-      {/* Performance Sidebar */}
-      {selectedAgent && (
-        <div className="w-64 border-l border-cosmos-border bg-cosmos-bg p-4 overflow-y-auto custom-scrollbar flex-shrink-0">
-          <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-4">Performance</h3>
-          <div className="flex flex-col items-center p-4 bg-cosmos-card border border-cosmos-border rounded-xl mb-4">
-            <TokenMeter
-              used={agentStats?.successRate ?? 0}
-              total={100}
-              size={64}
-              color={agentStats ? (agentStats.successRate >= 90 ? '#10b981' : agentStats.successRate >= 70 ? '#f59e0b' : '#ef4444') : '#3b82f6'}
-              label={agentStats ? `${agentStats.successRate}%` : '--'}
-            />
-            <p className="text-[10px] text-zinc-500 mt-2">Success Rate</p>
+      <div className="flex-1 overflow-hidden flex">
+        <div className="w-96 border-r border-cosmos-border bg-cosmos-bg flex flex-col flex-shrink-0">
+          <div className="p-4 space-y-3 border-b border-cosmos-border">
+            <div className="relative">
+              <Icon icon="lucide:search" className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-xs" />
+              <input
+                type="text"
+                placeholder="Search global agents..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 bg-cosmos-card border border-cosmos-border rounded-lg text-xs text-white placeholder-zinc-600 outline-none focus:border-cosmos-accent"
+              />
+            </div>
+            <p className="text-[10px] text-zinc-600">
+              Editing agents happens in Settings. This screen only controls availability in the current project.
+            </p>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-zinc-500">Sessions</span>
-              <span className="text-xs font-bold text-white">{agentStats?.sessions ?? '--'}</span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-zinc-500">Total Tokens</span>
-              <span className="text-xs font-bold text-white">
-                {agentStats ? (agentStats.totalTokens > 1000 ? `${(agentStats.totalTokens / 1000).toFixed(1)}k` : agentStats.totalTokens) : '--'}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-zinc-500">Avg Response</span>
-              <span className="text-xs font-bold text-white">
-                {agentStats ? `${(agentStats.avgTime / 1000).toFixed(1)}s` : '--'}
-              </span>
-            </div>
-          </div>
-
-          {/* Active Tools */}
-          <div className="mt-6">
-            <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-3">Active Tools</h3>
-            <div className="flex flex-wrap gap-1.5">
-              {(selectedAgent.capabilities || DEFAULT_CAPABILITIES).tools.map((toolId) => {
-                const tool = AVAILABLE_TOOLS.find((t) => t.id === toolId)
-                if (!tool) return null
-                return (
-                  <span key={toolId} className="px-2 py-1 bg-zinc-800 text-zinc-400 text-[10px] font-bold rounded flex items-center gap-1.5">
-                    <Icon icon={tool.icon} className="text-[10px]" />
-                    {tool.name}
-                  </span>
-                )
-              })}
-              {(selectedAgent.capabilities || DEFAULT_CAPABILITIES).tools.length === 0 && (
-                <span className="text-[10px] text-zinc-600">No tools enabled</span>
-              )}
-            </div>
-          </div>
-
-          {/* Memory */}
-          <div className="mt-6">
-            <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-3">Memory</h3>
-            {(() => {
-              const caps = selectedAgent.capabilities || DEFAULT_CAPABILITIES
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
+            {filteredAgents.map((agent) => {
+              const isDisabled = disabledGlobalAgentIds.has(agent.id)
               return (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-zinc-500">Context Window</span>
-                    <span className="text-[10px] font-bold text-white">{Math.round(caps.contextWindowSize / 1000)}k tokens</span>
+                <button
+                  key={agent.id}
+                  onClick={() => toggleDisabledGlobalAgent(agent.id)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-colors ${
+                    isDisabled
+                      ? 'bg-zinc-900/70 border-zinc-700'
+                      : 'bg-blue-500/5 border-blue-500/20 hover:border-blue-400/40'
+                  }`}
+                >
+                  <GradientAvatar gradient={agent.color} icon={agent.icon} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className={`text-xs font-bold truncate ${isDisabled ? 'text-zinc-400' : 'text-white'}`}>{agent.name}</h4>
+                      <StatusDot color={isDisabled ? 'gray' : 'green'} />
+                    </div>
+                    <p className="text-[10px] text-zinc-500 truncate">{agent.role}</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-zinc-500">History Limit</span>
-                    <span className="text-[10px] font-bold text-white">
-                      {caps.conversationHistoryLimit === 0 ? 'Unlimited' : `${caps.conversationHistoryLimit} msgs`}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-zinc-500">Memory</span>
-                    <span className={`text-[10px] font-bold ${caps.memoryEnabled ? 'text-emerald-400' : 'text-zinc-600'}`}>
-                      {caps.memoryEnabled ? 'Enabled' : 'Disabled'}
-                    </span>
-                  </div>
-                </div>
+                  <FormToggle checked={!isDisabled} onChange={() => toggleDisabledGlobalAgent(agent.id)} />
+                </button>
               )
-            })()}
-          </div>
+            })}
 
-          {/* Expertise */}
-          <div className="mt-6">
-            <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-3">Expertise</h3>
-            <div className="flex flex-wrap gap-1">
-              {selectedAgent.expertise.map((skill) => (
-                <span key={skill} className="px-2 py-1 bg-zinc-800 text-zinc-400 text-[10px] font-bold rounded">
-                  {skill}
-                </span>
-              ))}
-            </div>
+            {filteredAgents.length === 0 && (
+              <div className="p-4 text-center">
+                <p className="text-[10px] text-zinc-600">No global agents found</p>
+                <p className="text-[10px] text-zinc-700 mt-1">Add them in Settings &gt; Global Agents</p>
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      <AddAgentDialog
-        open={addDialogOpen}
-        onClose={() => setAddDialogOpen(false)}
-        onAdd={handleAddAgent}
-        existingIds={agents.map((a) => a.id)}
-      />
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="max-w-md text-center">
+            <Icon icon="lucide:bot" className="text-zinc-700 text-4xl mb-4" />
+            <h3 className="text-sm font-semibold text-white mb-2">Project-scoped agent control</h3>
+            <p className="text-xs text-zinc-500 leading-6">
+              Agents are now defined once for the whole app. Use the toggles on the left to disable specific agents in this project without affecting any other project.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

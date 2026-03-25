@@ -9,8 +9,6 @@ import { useProjectStore } from '../../../store/useProjectStore'
 import { useLicenseStore } from '../../../store/useLicenseStore'
 import { useNotionStore } from '../../../store/useNotionStore'
 import { useGlobalMcpStore } from '../../../store/useGlobalMcpStore'
-import { useGlobalAgentStore } from '../../../store/useGlobalAgentStore'
-import { AGENT_TEMPLATES, AGENT_TEMPLATE_CATEGORIES } from '../../../data/agent-templates'
 import { MCP_SERVER_TEMPLATES } from '../../../data/mcp-server-templates'
 import { api } from '../../../api'
 import type { StorageStats } from '../../../types'
@@ -961,164 +959,6 @@ function AgentDefaultsSection() {
   )
 }
 
-function AgentsSection() {
-  const { openProjects, activeProjectPath, addProjectAgent, removeProjectAgent } = useProjectStore()
-  const { enabledAgentIds } = useGlobalAgentStore()
-
-  const agents = activeProjectPath
-    ? openProjects.find((p) => p.projectPath === activeProjectPath)?.agents || []
-    : []
-
-  // Get enabled built-in agents that aren't already in this project
-  const availableBuiltInAgents = AGENT_TEMPLATES.filter((agent) =>
-    enabledAgentIds.has(agent.id) &&
-    !agents.find((a) => a.id === agent.id)
-  )
-
-  const [newAgentName, setNewAgentName] = useState('')
-  const [newAgentUrl, setNewAgentUrl] = useState('')
-  const [showAddForm, setShowAddForm] = useState(false)
-
-  const handleAddAgent = () => {
-    if (!newAgentName.trim() || !newAgentUrl.trim() || !activeProjectPath) return
-    addProjectAgent({
-      id: Date.now().toString(),
-      name: newAgentName.trim(),
-      url: newAgentUrl.trim(),
-      enabled: true,
-      isListening: true,
-      description: 'External agent',
-      config: {},
-    })
-    setNewAgentName('')
-    setNewAgentUrl('')
-    setShowAddForm(false)
-  }
-
-  const handleAddBuiltInAgent = (agent: typeof AGENT_TEMPLATES[0]) => {
-    if (!activeProjectPath) return
-    addProjectAgent({
-      id: agent.id,
-      name: agent.name,
-      role: agent.role,
-      icon: agent.icon,
-      color: agent.color,
-      expertise: agent.expertise,
-      personality: agent.personality,
-      enabled: true,
-      isListening: true,
-      description: agent.description,
-      config: {},
-    })
-  }
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-bold text-white mb-1">Agent Swarm</h2>
-        <p className="text-xs text-zinc-500">Manage your agents — they listen to all conversations by default</p>
-      </div>
-
-      <div className="flex gap-2">
-        {!showAddForm ? (
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="px-4 py-2 bg-cosmos-accent hover:bg-cosmos-accent/90 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-2"
-          >
-            <Icon icon="lucide:plus" className="text-sm" />
-            Add Agent
-          </button>
-        ) : (
-          <div className="flex-1 space-y-3 p-4 bg-cosmos-card border border-cosmos-border rounded-lg">
-            <input
-              type="text"
-              placeholder="Agent name"
-              value={newAgentName}
-              onChange={(e) => setNewAgentName(e.target.value)}
-              className="w-full bg-cosmos-bg text-white text-xs rounded-lg px-3 py-2 outline-none border border-cosmos-border focus:border-cosmos-accent placeholder:text-zinc-600"
-            />
-            <input
-              type="text"
-              placeholder="External URL (optional)"
-              value={newAgentUrl}
-              onChange={(e) => setNewAgentUrl(e.target.value)}
-              className="w-full bg-cosmos-bg text-white text-xs rounded-lg px-3 py-2 outline-none border border-cosmos-border focus:border-cosmos-accent placeholder:text-zinc-600"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={handleAddAgent}
-                disabled={!newAgentName.trim()}
-                className="flex-1 px-3 py-1.5 bg-cosmos-accent hover:bg-cosmos-accent/90 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors"
-              >
-                Add
-              </button>
-              <button
-                onClick={() => { setShowAddForm(false); setNewAgentName(''); setNewAgentUrl('') }}
-                className="px-3 py-1.5 text-zinc-400 hover:text-white border border-cosmos-border rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {availableBuiltInAgents.length > 0 && (
-        <div>
-          <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">Available Built-In Agents</h3>
-          <p className="text-xs text-zinc-500 mb-3">Click to add any of the enabled default agents with full configuration</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {availableBuiltInAgents.map((agent) => (
-              <button
-                key={agent.id}
-                onClick={() => handleAddBuiltInAgent(agent)}
-                className="p-3 rounded-lg border border-cosmos-border bg-cosmos-card hover:border-cosmos-accent/50 transition-all text-left"
-              >
-                <div className="flex items-start gap-2">
-                  <Icon icon={agent.icon} className="text-sm mt-0.5 text-cosmos-accent" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-white">{agent.name}</p>
-                    <p className="text-[10px] text-zinc-500">{agent.role}</p>
-                    <p className="text-[10px] text-zinc-600 mt-1 line-clamp-2">{agent.description}</p>
-                  </div>
-                  <Icon icon="lucide:plus" className="text-xs text-zinc-600" />
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {agents.length === 0 && availableBuiltInAgents.length === 0 ? (
-        <div className="p-4 bg-cosmos-card border border-cosmos-border rounded-lg text-center">
-          <p className="text-xs text-zinc-500">No agents yet. Enable built-in agents in Agent Defaults, or add custom agents here.</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {agents.map((agent) => (
-            <div key={agent.id} className="p-4 bg-cosmos-card border border-cosmos-border rounded-lg flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-white">{agent.name}</p>
-                <p className="text-xs text-zinc-500 mt-0.5">{agent.description || agent.url}</p>
-                {agent.isListening && (
-                  <div className="mt-2 inline-block px-2 py-1 bg-cyan-500/10 text-cyan-400 text-[10px] rounded border border-cyan-500/20">
-                    🎧 Listening
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => removeProjectAgent(agent.id)}
-                className="px-3 py-1.5 text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 rounded-lg transition-colors text-xs"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
 
 function McpServersSection() {
   const { openProjects, activeProjectPath, addProjectMcpServer, removeProjectMcpServer } = useProjectStore()
@@ -1738,20 +1578,31 @@ export default function SettingsPage() {
       </div>
 
       {/* Settings Content */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="max-w-3xl p-8">
-          {activeNav === 'account' && <AccountSection />}
-          {activeNav === 'general' && <GeneralSection />}
-          {activeNav === 'integrations' && <IntegrationsSection />}
-          {activeNav === 'notion' && <NotionSection />}
-          {activeNav === 'agent-defaults' && <AgentDefaultsSection />}
-          {activeNav === 'agents' && <AgentsSection />}
-          {activeNav === 'mcp' && <McpServersSection />}
-          {activeNav === 'devices' && <DevicesSection />}
-          {activeNav === 'security' && <SecuritySection />}
-          {activeNav === 'advanced' && <AdvancedSection />}
+      {activeNav === 'agents' ? (
+        <div className="flex-1 overflow-hidden p-4 flex flex-col">
+          <div className="mb-4 flex-shrink-0">
+            <h2 className="text-lg font-bold text-white mb-1">Agent Swarm</h2>
+            <p className="text-xs text-zinc-500">Configure global agents — they apply to all projects by default</p>
+          </div>
+          <div className="flex-1 min-h-0">
+            <GlobalAgentsEditor />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="max-w-3xl p-8">
+            {activeNav === 'account' && <AccountSection />}
+            {activeNav === 'general' && <GeneralSection />}
+            {activeNav === 'integrations' && <IntegrationsSection />}
+            {activeNav === 'notion' && <NotionSection />}
+            {activeNav === 'agent-defaults' && <AgentDefaultsSection />}
+            {activeNav === 'mcp' && <McpServersSection />}
+            {activeNav === 'devices' && <DevicesSection />}
+            {activeNav === 'security' && <SecuritySection />}
+            {activeNav === 'advanced' && <AdvancedSection />}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
