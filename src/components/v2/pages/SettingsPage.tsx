@@ -148,14 +148,15 @@ async function loadJiraStore() {
   }
 }
 
-type SettingsNav = 'account' | 'general' | 'integrations' | 'notion' | 'global-mcp' | 'devices' | 'security' | 'advanced'
+type SettingsNav = 'account' | 'general' | 'integrations' | 'notion' | 'agents' | 'mcp' | 'devices' | 'security' | 'advanced'
 
 const allNavItems: { id: SettingsNav; label: string; icon: string; featureFlag?: string }[] = [
   { id: 'account', label: 'Account', icon: 'lucide:user' },
   { id: 'general', label: 'General', icon: 'lucide:settings' },
   { id: 'integrations', label: 'Integrations', icon: 'lucide:plug-zap' },
   { id: 'notion', label: 'Notion', icon: 'lucide:book-text' },
-  { id: 'global-mcp', label: 'Global MCP', icon: 'lucide:puzzle' },
+  { id: 'agents', label: 'Agent Swarm', icon: 'lucide:bot' },
+  { id: 'mcp', label: 'MCP Servers', icon: 'lucide:puzzle' },
   { id: 'devices', label: 'Devices', icon: 'lucide:smartphone', featureFlag: 'devices' },
   { id: 'security', label: 'Security', icon: 'lucide:shield-check' },
   { id: 'advanced', label: 'Advanced', icon: 'lucide:code' },
@@ -942,6 +943,233 @@ function IntegrationsSection() {
   )
 }
 
+function AgentsSection() {
+  const agents = useProjectStore((s) => {
+    const active = s.activeProjectPath ? s.openProjects.find((p) => p.projectPath === s.activeProjectPath) : null
+    return active?.agents || []
+  })
+  const addAgent = useProjectStore((s) => s.addProjectAgent)
+  const removeAgent = useProjectStore((s) => s.removeProjectAgent)
+
+  const [newAgentName, setNewAgentName] = useState('')
+  const [newAgentUrl, setNewAgentUrl] = useState('')
+  const [showAddForm, setShowAddForm] = useState(false)
+
+  const handleAddAgent = () => {
+    if (!newAgentName.trim() || !newAgentUrl.trim()) return
+    addAgent({
+      id: Date.now().toString(),
+      name: newAgentName.trim(),
+      url: newAgentUrl.trim(),
+      enabled: true,
+      isListening: true,
+      description: 'External agent',
+      config: {},
+    })
+    setNewAgentName('')
+    setNewAgentUrl('')
+    setShowAddForm(false)
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold text-white mb-1">Agent Swarm</h2>
+        <p className="text-xs text-zinc-500">Manage your agents — they listen to all conversations by default</p>
+      </div>
+
+      <div className="flex gap-2">
+        {!showAddForm ? (
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="px-4 py-2 bg-cosmos-accent hover:bg-cosmos-accent/90 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Icon icon="lucide:plus" className="text-sm" />
+            Add Agent
+          </button>
+        ) : (
+          <div className="flex-1 space-y-3 p-4 bg-cosmos-card border border-cosmos-border rounded-lg">
+            <input
+              type="text"
+              placeholder="Agent name"
+              value={newAgentName}
+              onChange={(e) => setNewAgentName(e.target.value)}
+              className="w-full bg-cosmos-bg text-white text-xs rounded-lg px-3 py-2 outline-none border border-cosmos-border focus:border-cosmos-accent placeholder:text-zinc-600"
+            />
+            <input
+              type="text"
+              placeholder="External URL (optional)"
+              value={newAgentUrl}
+              onChange={(e) => setNewAgentUrl(e.target.value)}
+              className="w-full bg-cosmos-bg text-white text-xs rounded-lg px-3 py-2 outline-none border border-cosmos-border focus:border-cosmos-accent placeholder:text-zinc-600"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddAgent}
+                disabled={!newAgentName.trim()}
+                className="flex-1 px-3 py-1.5 bg-cosmos-accent hover:bg-cosmos-accent/90 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                Add
+              </button>
+              <button
+                onClick={() => { setShowAddForm(false); setNewAgentName(''); setNewAgentUrl('') }}
+                className="px-3 py-1.5 text-zinc-400 hover:text-white border border-cosmos-border rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {agents.length === 0 ? (
+        <div className="p-4 bg-cosmos-card border border-cosmos-border rounded-lg text-center">
+          <p className="text-xs text-zinc-500">No agents yet. Add one to get started.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {agents.map((agent) => (
+            <div key={agent.id} className="p-4 bg-cosmos-card border border-cosmos-border rounded-lg flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-white">{agent.name}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">{agent.description || agent.url}</p>
+                {agent.isListening && (
+                  <div className="mt-2 inline-block px-2 py-1 bg-cyan-500/10 text-cyan-400 text-[10px] rounded border border-cyan-500/20">
+                    🎧 Listening
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => removeAgent(agent.id)}
+                className="px-3 py-1.5 text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 rounded-lg transition-colors text-xs"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function McpServersSection() {
+  const mcpServers = useProjectStore((s) => {
+    const active = s.activeProjectPath ? s.openProjects.find((p) => p.projectPath === s.activeProjectPath) : null
+    return active?.mcpServers || []
+  })
+  const addMcpServer = useProjectStore((s) => s.addProjectMcpServer)
+  const removeMcpServer = useProjectStore((s) => s.removeProjectMcpServer)
+
+  const [newServerName, setNewServerName] = useState('')
+  const [newServerUrl, setNewServerUrl] = useState('')
+  const [newServerType, setNewServerType] = useState('sse')
+  const [showAddForm, setShowAddForm] = useState(false)
+
+  const handleAddServer = () => {
+    if (!newServerName.trim() || !newServerUrl.trim()) return
+    addMcpServer({
+      id: Date.now().toString(),
+      name: newServerName.trim(),
+      url: newServerUrl.trim(),
+      type: newServerType as any,
+      enabled: true,
+    })
+    setNewServerName('')
+    setNewServerUrl('')
+    setNewServerType('sse')
+    setShowAddForm(false)
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold text-white mb-1">MCP Servers</h2>
+        <p className="text-xs text-zinc-500">Connect Model Context Protocol servers — they apply to all projects</p>
+      </div>
+
+      <div className="flex gap-2">
+        {!showAddForm ? (
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="px-4 py-2 bg-cosmos-accent-2 hover:bg-cosmos-accent-2/90 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Icon icon="lucide:plus" className="text-sm" />
+            Add MCP Server
+          </button>
+        ) : (
+          <div className="flex-1 space-y-3 p-4 bg-cosmos-card border border-cosmos-border rounded-lg">
+            <input
+              type="text"
+              placeholder="Server name"
+              value={newServerName}
+              onChange={(e) => setNewServerName(e.target.value)}
+              className="w-full bg-cosmos-bg text-white text-xs rounded-lg px-3 py-2 outline-none border border-cosmos-border focus:border-cosmos-accent-2 placeholder:text-zinc-600"
+            />
+            <input
+              type="text"
+              placeholder="Server URL"
+              value={newServerUrl}
+              onChange={(e) => setNewServerUrl(e.target.value)}
+              className="w-full bg-cosmos-bg text-white text-xs rounded-lg px-3 py-2 outline-none border border-cosmos-border focus:border-cosmos-accent-2 placeholder:text-zinc-600"
+            />
+            <select
+              value={newServerType}
+              onChange={(e) => setNewServerType(e.target.value)}
+              className="w-full bg-cosmos-bg text-white text-xs rounded-lg px-3 py-2 outline-none border border-cosmos-border focus:border-cosmos-accent-2"
+            >
+              <option value="sse">SSE (Server-Sent Events)</option>
+              <option value="stdio">StdIO</option>
+              <option value="http">HTTP</option>
+            </select>
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddServer}
+                disabled={!newServerName.trim() || !newServerUrl.trim()}
+                className="flex-1 px-3 py-1.5 bg-cosmos-accent-2 hover:bg-cosmos-accent-2/90 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                Add Server
+              </button>
+              <button
+                onClick={() => { setShowAddForm(false); setNewServerName(''); setNewServerUrl('') }}
+                className="px-3 py-1.5 text-zinc-400 hover:text-white border border-cosmos-border rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {mcpServers.length === 0 ? (
+        <div className="p-4 bg-cosmos-card border border-cosmos-border rounded-lg text-center">
+          <p className="text-xs text-zinc-500">No MCP servers connected yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {mcpServers.map((server) => (
+            <div key={server.id} className="p-4 bg-cosmos-card border border-cosmos-border rounded-lg flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-white">{server.name}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">{server.url}</p>
+                <div className="mt-2 inline-block px-2 py-1 bg-purple-500/10 text-purple-400 text-[10px] rounded border border-purple-500/20">
+                  {server.type}
+                </div>
+              </div>
+              <button
+                onClick={() => removeMcpServer(server.id)}
+                className="px-3 py-1.5 text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 rounded-lg transition-colors text-xs"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function DevicesSection() {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [qrLoading, setQrLoading] = useState(false)
@@ -1445,12 +1673,13 @@ export default function SettingsPage() {
 
       {/* Settings Content */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="max-w-xl p-8">
+        <div className="max-w-3xl p-8">
           {activeNav === 'account' && <AccountSection />}
           {activeNav === 'general' && <GeneralSection />}
           {activeNav === 'integrations' && <IntegrationsSection />}
           {activeNav === 'notion' && <NotionSection />}
-          {activeNav === 'global-mcp' && <GlobalMcpSection />}
+          {activeNav === 'agents' && <AgentsSection />}
+          {activeNav === 'mcp' && <McpServersSection />}
           {activeNav === 'devices' && <DevicesSection />}
           {activeNav === 'security' && <SecuritySection />}
           {activeNav === 'advanced' && <AdvancedSection />}
