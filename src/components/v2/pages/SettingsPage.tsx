@@ -3,6 +3,7 @@ import { Icon } from '../../common/Icon'
 import { FormInput } from '../components/FormInput'
 import { FormSelect } from '../components/FormSelect'
 import { FormToggle } from '../components/FormToggle'
+import { GlobalAgentsEditor } from '../GlobalAgentsEditor'
 import { useAppStore } from '../../../store/useAppStore'
 import { useProjectStore } from '../../../store/useProjectStore'
 import { useLicenseStore } from '../../../store/useLicenseStore'
@@ -947,51 +948,14 @@ function IntegrationsSection() {
 }
 
 function AgentDefaultsSection() {
-  const { enabledAgentIds, toggleAgent } = useGlobalAgentStore()
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-bold text-white mb-1">Agent Defaults</h2>
-        <p className="text-xs text-zinc-500">Choose which agents are enabled by default for all new projects</p>
+    <div className="flex flex-col h-full">
+      <div className="flex-shrink-0 px-6 py-4 border-b border-cosmos-border">
+        <h2 className="text-lg font-bold text-white">Global Agents</h2>
+        <p className="text-xs text-zinc-500">Configure default agents for all projects</p>
       </div>
-
-      <div className="space-y-4">
-        {AGENT_TEMPLATE_CATEGORIES.map((category) => (
-          <div key={category.name}>
-            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">{category.name}</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {category.templates.map((agent) => (
-                <button
-                  key={agent.id}
-                  onClick={() => toggleAgent(agent.id)}
-                  className={`p-3 rounded-lg border transition-all text-left ${
-                    enabledAgentIds.has(agent.id)
-                      ? 'border-cosmos-accent bg-cosmos-accent/10 text-white'
-                      : 'border-cosmos-border bg-cosmos-card text-zinc-400 hover:border-zinc-500'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Icon icon={agent.icon} className="text-sm" />
-                    <div className="flex-1">
-                      <p className="text-xs font-bold">{agent.name}</p>
-                      <p className="text-[10px] text-zinc-500">{agent.role}</p>
-                    </div>
-                    {enabledAgentIds.has(agent.id) && (
-                      <Icon icon="lucide:check" className="text-sm text-cosmos-accent" />
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="p-4 bg-cyan-500/5 border border-cyan-500/20 rounded-lg">
-        <p className="text-xs text-cyan-400">
-          💡 These agents will appear as available for every project you open. You can still enable/disable them per project.
-        </p>
+      <div className="flex-1 overflow-hidden">
+        <GlobalAgentsEditor />
       </div>
     </div>
   )

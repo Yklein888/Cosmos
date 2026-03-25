@@ -77,6 +77,8 @@ export interface ProjectTab {
   mode: ProjectMode
   agents: AgentDefinition[]
   mcpServers: McpServer[]
+  // Global agents disabled in this project
+  disabledGlobalAgentIds: Set<string>
   // Per-tab draft input (Phase 2)
   draftText: string
   draftImages: ImageAttachment[]
@@ -105,6 +107,7 @@ interface ProjectStore {
   addProjectAgent: (agent: AgentDefinition) => void
   removeProjectAgent: (id: string) => void
   updateProjectAgent: (id: string, updates: Partial<AgentDefinition>) => void
+  toggleDisabledGlobalAgent: (agentId: string) => void
   setProjectMcpServers: (servers: McpServer[]) => void
   addProjectMcpServer: (server: McpServer) => void
   removeProjectMcpServer: (id: string) => void
@@ -555,6 +558,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       mode: settings.mode || 'solo',
       agents: settings.agents || [],
       mcpServers: settings.mcpServers || [],
+      disabledGlobalAgentIds: new Set(settings.disabledGlobalAgentIds || []),
       draftText: '',
       draftImages: [],
       activeView: 'chat',
@@ -804,6 +808,26 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       ),
     })
     api.projects.setSettings(dirPath, { agents })
+  },
+
+  toggleDisabledGlobalAgent: (agentId: string) => {
+    const state = get()
+    if (!state.activeProjectPath) return
+    const dirPath = state.activeProjectPath
+    const tab = state.openProjects.find((p) => p.projectPath === dirPath)
+    if (!tab) return
+    const newDisabled = new Set(tab.disabledGlobalAgentIds)
+    if (newDisabled.has(agentId)) {
+      newDisabled.delete(agentId)
+    } else {
+      newDisabled.add(agentId)
+    }
+    set({
+      openProjects: state.openProjects.map((p) =>
+        p.projectPath === dirPath ? { ...p, disabledGlobalAgentIds: newDisabled } : p
+      ),
+    })
+    api.projects.setSettings(dirPath, { disabledGlobalAgentIds: Array.from(newDisabled) })
   },
 
   setProjectMcpServers: (mcpServers: McpServer[]) => {

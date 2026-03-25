@@ -3,26 +3,23 @@ import { AGENT_TEMPLATES } from '../data/agent-templates'
 import type { AgentDefinition } from '../types'
 
 interface GlobalAgentStore {
-  // Default agents enabled for all new projects
-  enabledAgentIds: Set<string>
+  // All global agents (built-in + custom) with full definitions
+  globalAgents: Map<string, AgentDefinition>
 
-  // Custom agents from marketplace or user-created
-  customAgents: AgentDefinition[]
-
-  // Toggle agent on/off
+  // Toggle agent on/off globally
   toggleAgent: (agentId: string) => void
 
-  // Set multiple agents at once
-  setEnabledAgents: (agentIds: string[]) => void
+  // Update global agent
+  updateGlobalAgent: (agentId: string, updates: Partial<AgentDefinition>) => void
 
-  // Get all enabled agents (built-in + custom)
-  getEnabledAgents: () => AgentDefinition[]
+  // Get all global agents
+  getGlobalAgents: () => AgentDefinition[]
 
-  // Add custom agent
-  addCustomAgent: (agent: AgentDefinition) => void
+  // Add custom global agent
+  addCustomGlobalAgent: (agent: AgentDefinition) => void
 
-  // Remove custom agent
-  removeCustomAgent: (agentId: string) => void
+  // Remove custom global agent
+  removeCustomGlobalAgent: (agentId: string) => void
 
   // Load from localStorage
   loadFromStorage: () => void
@@ -35,46 +32,58 @@ interface GlobalAgentStore {
 const DEFAULT_ENABLED_IDS = new Set(['developer', 'architect', 'pm'])
 
 export const useGlobalAgentStore = create<GlobalAgentStore>((set, get) => ({
-  enabledAgentIds: DEFAULT_ENABLED_IDS,
-  customAgents: [],
+  globalAgents: new Map(),
 
   toggleAgent: (agentId: string) => {
     set((state) => {
-      const newEnabled = new Set(state.enabledAgentIds)
-      if (newEnabled.has(agentId)) {
-        newEnabled.delete(agentId)
-      } else {
-        newEnabled.add(agentId)
+      const agent = state.globalAgents.get(agentId)
+      if (agent) {
+        const updated = { ...agent, enabled: !agent.enabled }
+        const newMap = new Map(state.globalAgents)
+        newMap.set(agentId, updated)
+        return { globalAgents: newMap }
       }
-      return { enabledAgentIds: newEnabled }
+      return state
     })
     get().saveToStorage()
   },
 
-  setEnabledAgents: (agentIds: string[]) => {
-    set({ enabledAgentIds: new Set(agentIds) })
+  updateGlobalAgent: (agentId: string, updates: Partial<AgentDefinition>) => {
+    set((state) => {
+      const agent = state.globalAgents.get(agentId)
+      if (agent) {
+        const newMap = new Map(state.globalAgents)
+        newMap.set(agentId, { ...agent, ...updates })
+        return { globalAgents: newMap }
+      }
+      return state
+    })
     get().saveToStorage()
   },
 
-  getEnabledAgents: () => {
+  getGlobalAgents: () => {
     const state = get()
-    const builtIn = AGENT_TEMPLATES.filter((a) => state.enabledAgentIds.has(a.id))
-    return [...builtIn, ...state.customAgents]
+    return Array.from(state.globalAgents.values()).sort((a, b) => {
+      if (a.enabled !== b.enabled) return b.enabled ? 1 : -1
+      return a.name.localeCompare(b.name)
+    })
   },
 
-  addCustomAgent: (agent: AgentDefinition) => {
-    set((state) => ({
-      customAgents: [...state.customAgents, agent],
-      enabledAgentIds: new Set([...state.enabledAgentIds, agent.id]),
-    }))
+  addCustomGlobalAgent: (agent: AgentDefinition) => {
+    set((state) => {
+      const newMap = new Map(state.globalAgents)
+      newMap.set(agent.id, { ...agent, enabled: true })
+      return { globalAgents: newMap }
+    })
     get().saveToStorage()
   },
 
-  removeCustomAgent: (agentId: string) => {
-    set((state) => ({
-      customAgents: state.customAgents.filter((a) => a.id !== agentId),
-      enabledAgentIds: new Set([...state.enabledAgentIds].filter((id) => id !== agentId)),
-    }))
+  removeCustomGlobalAgent: (agentId: string) => {
+    set((state) => {
+      const newMap = new Map(state.globalAgents)
+      newMap.delete(agentId)
+      return { globalAgents: newMap }
+    })
     get().saveToStorage()
   },
 
@@ -82,11 +91,35 @@ export const useGlobalAgentStore = create<GlobalAgentStore>((set, get) => ({
     try {
       const stored = localStorage.getItem('cosmos:global-agents')
       if (stored) {
-        const { enabledAgentIds, customAgents } = JSON.parse(stored)
-        set({
-          enabledAgentIds: new Set(enabledAgentIds || Array.from(DEFAULT_ENABLED_IDS)),
-          customAgents: customAgents || [],
+        const { globalAgents: storedAgents } = JSON.parse(stored)
+        const agentsMap = new Map()
+
+        // Initialize with built-in templates
+        AGENT_TEMPLATES.forEach((template) => {
+          agentsMap.set(template.id, {
+            ...template,
+            enabled: DEFAULT_ENABLED_IDS.has(template.id),
+          })
         })
+
+        // Override with stored values
+        if (storedAgents) {
+          Object.entries(storedAgents).forEach(([id, agent]: any) => {
+            agentsMap.set(id, agent)
+          })
+        }
+
+        set({ globalAgents: agentsMap })
+      } else {
+        // Initialize with defaults
+        const agentsMap = new Map()
+        AGENT_TEMPLATES.forEach((template) => {
+          agentsMap.set(template.id, {
+            ...template,
+            enabled: DEFAULT_ENABLED_IDS.has(template.id),
+          })
+        })
+        set({ globalAgents: agentsMap })
       }
     } catch (err) {
       console.error('Failed to load agent settings:', err)
@@ -96,12 +129,13 @@ export const useGlobalAgentStore = create<GlobalAgentStore>((set, get) => ({
   saveToStorage: () => {
     try {
       const state = get()
+      const agentsObj: Record<string, AgentDefinition> = {}
+      state.globalAgents.forEach((agent, id) => {
+        agentsObj[id] = agent
+      })
       localStorage.setItem(
         'cosmos:global-agents',
-        JSON.stringify({
-          enabledAgentIds: Array.from(state.enabledAgentIds),
-          customAgents: state.customAgents,
-        })
+        JSON.stringify({ globalAgents: agentsObj })
       )
     } catch (err) {
       console.error('Failed to save agent settings:', err)
