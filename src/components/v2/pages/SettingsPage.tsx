@@ -999,10 +999,17 @@ function AgentDefaultsSection() {
 
 function AgentsSection() {
   const { openProjects, activeProjectPath, addProjectAgent, removeProjectAgent } = useProjectStore()
+  const { enabledAgentIds } = useGlobalAgentStore()
 
   const agents = activeProjectPath
     ? openProjects.find((p) => p.projectPath === activeProjectPath)?.agents || []
     : []
+
+  // Get enabled built-in agents that aren't already in this project
+  const availableBuiltInAgents = AGENT_TEMPLATES.filter((agent) =>
+    enabledAgentIds.has(agent.id) &&
+    !agents.find((a) => a.id === agent.id)
+  )
 
   const [newAgentName, setNewAgentName] = useState('')
   const [newAgentUrl, setNewAgentUrl] = useState('')
@@ -1022,6 +1029,23 @@ function AgentsSection() {
     setNewAgentName('')
     setNewAgentUrl('')
     setShowAddForm(false)
+  }
+
+  const handleAddBuiltInAgent = (agent: typeof AGENT_TEMPLATES[0]) => {
+    if (!activeProjectPath) return
+    addProjectAgent({
+      id: agent.id,
+      name: agent.name,
+      role: agent.role,
+      icon: agent.icon,
+      color: agent.color,
+      expertise: agent.expertise,
+      personality: agent.personality,
+      enabled: true,
+      isListening: true,
+      description: agent.description,
+      config: {},
+    })
   }
 
   return (
@@ -1075,9 +1099,35 @@ function AgentsSection() {
         )}
       </div>
 
-      {agents.length === 0 ? (
+      {availableBuiltInAgents.length > 0 && (
+        <div>
+          <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">Available Built-In Agents</h3>
+          <p className="text-xs text-zinc-500 mb-3">Click to add any of the enabled default agents with full configuration</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {availableBuiltInAgents.map((agent) => (
+              <button
+                key={agent.id}
+                onClick={() => handleAddBuiltInAgent(agent)}
+                className="p-3 rounded-lg border border-cosmos-border bg-cosmos-card hover:border-cosmos-accent/50 transition-all text-left"
+              >
+                <div className="flex items-start gap-2">
+                  <Icon icon={agent.icon} className="text-sm mt-0.5 text-cosmos-accent" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-white">{agent.name}</p>
+                    <p className="text-[10px] text-zinc-500">{agent.role}</p>
+                    <p className="text-[10px] text-zinc-600 mt-1 line-clamp-2">{agent.description}</p>
+                  </div>
+                  <Icon icon="lucide:plus" className="text-xs text-zinc-600" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {agents.length === 0 && availableBuiltInAgents.length === 0 ? (
         <div className="p-4 bg-cosmos-card border border-cosmos-border rounded-lg text-center">
-          <p className="text-xs text-zinc-500">No agents yet. Add one to get started.</p>
+          <p className="text-xs text-zinc-500">No agents yet. Enable built-in agents in Agent Defaults, or add custom agents here.</p>
         </div>
       ) : (
         <div className="space-y-2">

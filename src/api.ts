@@ -122,6 +122,7 @@ const stubAPI: ElectronAPI = {
   },
   updater: {
     install: noopAsync,
+    checkForUpdates: noopAsync,
     onStatus: noopUnsub,
   },
   shell: {

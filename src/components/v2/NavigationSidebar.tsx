@@ -81,7 +81,7 @@ function SidebarFooter() {
               {tier}
             </span>
           </div>
-          <p className="text-[10px] text-cosmos-text-dim">v1.0.0</p>
+          <p className="text-[10px] text-cosmos-text-dim">v1.0.3</p>
         </div>
         <div className="flex items-center gap-0.5">
           <button
