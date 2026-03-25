@@ -8,6 +8,8 @@ import { useProjectStore } from '../../../store/useProjectStore'
 import { useLicenseStore } from '../../../store/useLicenseStore'
 import { useNotionStore } from '../../../store/useNotionStore'
 import { useGlobalMcpStore } from '../../../store/useGlobalMcpStore'
+import { useGlobalAgentStore } from '../../../store/useGlobalAgentStore'
+import { AGENT_TEMPLATES, AGENT_TEMPLATE_CATEGORIES } from '../../../data/agent-templates'
 import { MCP_SERVER_TEMPLATES } from '../../../data/mcp-server-templates'
 import { api } from '../../../api'
 import type { StorageStats } from '../../../types'
@@ -148,13 +150,14 @@ async function loadJiraStore() {
   }
 }
 
-type SettingsNav = 'account' | 'general' | 'integrations' | 'notion' | 'agents' | 'mcp' | 'devices' | 'security' | 'advanced'
+type SettingsNav = 'account' | 'general' | 'integrations' | 'notion' | 'agent-defaults' | 'agents' | 'mcp' | 'devices' | 'security' | 'advanced'
 
 const allNavItems: { id: SettingsNav; label: string; icon: string; featureFlag?: string }[] = [
   { id: 'account', label: 'Account', icon: 'lucide:user' },
   { id: 'general', label: 'General', icon: 'lucide:settings' },
   { id: 'integrations', label: 'Integrations', icon: 'lucide:plug-zap' },
   { id: 'notion', label: 'Notion', icon: 'lucide:book-text' },
+  { id: 'agent-defaults', label: 'Agent Defaults', icon: 'lucide:star' },
   { id: 'agents', label: 'Agent Swarm', icon: 'lucide:bot' },
   { id: 'mcp', label: 'MCP Servers', icon: 'lucide:puzzle' },
   { id: 'devices', label: 'Devices', icon: 'lucide:smartphone', featureFlag: 'devices' },
@@ -943,6 +946,57 @@ function IntegrationsSection() {
   )
 }
 
+function AgentDefaultsSection() {
+  const { enabledAgentIds, toggleAgent } = useGlobalAgentStore()
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold text-white mb-1">Agent Defaults</h2>
+        <p className="text-xs text-zinc-500">Choose which agents are enabled by default for all new projects</p>
+      </div>
+
+      <div className="space-y-4">
+        {AGENT_TEMPLATE_CATEGORIES.map((category) => (
+          <div key={category.name}>
+            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">{category.name}</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {category.templates.map((agent) => (
+                <button
+                  key={agent.id}
+                  onClick={() => toggleAgent(agent.id)}
+                  className={`p-3 rounded-lg border transition-all text-left ${
+                    enabledAgentIds.has(agent.id)
+                      ? 'border-cosmos-accent bg-cosmos-accent/10 text-white'
+                      : 'border-cosmos-border bg-cosmos-card text-zinc-400 hover:border-zinc-500'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon icon={agent.icon} className="text-sm" />
+                    <div className="flex-1">
+                      <p className="text-xs font-bold">{agent.name}</p>
+                      <p className="text-[10px] text-zinc-500">{agent.role}</p>
+                    </div>
+                    {enabledAgentIds.has(agent.id) && (
+                      <Icon icon="lucide:check" className="text-sm text-cosmos-accent" />
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="p-4 bg-cyan-500/5 border border-cyan-500/20 rounded-lg">
+        <p className="text-xs text-cyan-400">
+          💡 These agents will appear as available for every project you open. You can still enable/disable them per project.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function AgentsSection() {
   const { openProjects, activeProjectPath, addProjectAgent, removeProjectAgent } = useProjectStore()
 
@@ -1676,6 +1730,7 @@ export default function SettingsPage() {
           {activeNav === 'general' && <GeneralSection />}
           {activeNav === 'integrations' && <IntegrationsSection />}
           {activeNav === 'notion' && <NotionSection />}
+          {activeNav === 'agent-defaults' && <AgentDefaultsSection />}
           {activeNav === 'agents' && <AgentsSection />}
           {activeNav === 'mcp' && <McpServersSection />}
           {activeNav === 'devices' && <DevicesSection />}
