@@ -121,8 +121,8 @@ const stubAPI: ElectronAPI = {
     getMachineId: () => Promise.resolve('stub-machine-id'),
   },
   updater: {
-    install: noopAsync,
-    checkForUpdates: noopAsync,
+    install: () => ipcRenderer.invoke('update:install'),
+    checkForUpdates: () => ipcRenderer.invoke('update:check'),
     onStatus: noopUnsub,
   },
   shell: {

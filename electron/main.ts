@@ -10,7 +10,7 @@ import { TaskScheduler } from './services/task-scheduler'
 import { Database } from './core/database'
 import { setupMenu } from './menu'
 import { ensureGlobalClaudeConfig } from './services/claude-config'
-import { setupAutoUpdater, installUpdate } from './services/auto-updater'
+import { setupAutoUpdater, installUpdate, checkForUpdates } from './services/auto-updater'
 import { RelayClient } from './services/relay-client'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -148,7 +148,7 @@ async function createWindow() {
   // Set up auto-updater
   setupAutoUpdater(mainWindow)
   ipcMain.handle('update:install', () => installUpdate())
-
+  ipcMain.handle('update:check', () => checkForUpdates())
 
   // Hide-to-tray on close — keeps scheduler running in background (all platforms)
   mainWindow.on('close', (event) => {
