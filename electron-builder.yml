@@ -1,0 +1,53 @@
+appId: com.cosmos.app
+productName: COSMOS
+copyright: Copyright © 2026
+
+afterPack: scripts/afterPack.cjs
+
+directories:
+  buildResources: resources
+  output: release
+
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - node_modules/**/*
+  - packages/pro/**/*
+  - package.json
+
+asarUnpack:
+  - "node_modules/better-sqlite3/**"
+  - "node_modules/node-pty/**"
+  - "dist-electron/jira-mcp-server.js"
+  - "dist-electron/computer-use-mcp-server.js"
+
+mac:
+  category: public.app-category.developer-tools
+  notarize: true
+  target:
+    - target: dmg
+      arch:
+        - arm64
+    - target: zip
+      arch:
+        - arm64
+  darkModeSupport: true
+
+win:
+  sign: false
+  signingHashAlgorithms: []
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  category: Development

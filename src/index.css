@@ -1,0 +1,339 @@
+@import '@xyflow/react/dist/style.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* React Flow dark theme */
+.react-flow {
+  --xy-background-color: var(--cosmos-bg) !important;
+}
+
+.react-flow__background {
+  background: var(--cosmos-bg) !important;
+}
+
+.react-flow__minimap {
+  background: var(--cosmos-card) !important;
+}
+
+.react-flow__controls {
+  display: none !important; /* using custom controls */
+}
+
+.react-flow__selection {
+  background: rgba(99, 102, 241, 0.08) !important;
+  border: 1px dashed rgba(99, 102, 241, 0.4) !important;
+}
+
+/* Edge animation */
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.workflow-edge-animated path {
+  animation: dash-flow 1.5s linear infinite;
+}
+
+/* Node execution glow */
+.workflow-node-running {
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+  border-radius: 0.5rem;
+}
+
+.workflow-node-completed {
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
+  border-radius: 0.5rem;
+}
+
+.workflow-node-failed {
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
+  border-radius: 0.5rem;
+}
+
+:root {
+  --cosmos-bg: #050508;
+  --cosmos-surface: #0a0a14;
+  --cosmos-card: #0f0f1a;
+  --cosmos-accent: #6366f1;
+  --cosmos-accent-2: #a855f7;
+  --cosmos-success: #22d3ee;
+  --cosmos-warning: #f59e0b;
+  --cosmos-error: #ef4444;
+  --cosmos-border: #1e1e30;
+  --cosmos-text: #e2e8f0;
+  --cosmos-text-muted: #94a3b8;
+  --cosmos-text-dim: #64748b;
+}
+
+/* Nebula ambient background */
+.cosmos-nebula-bg {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.03) 0%, transparent 40%),
+    var(--cosmos-bg);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1e1e30 transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Allow selection in inputs, textareas, code blocks, and terminal */
+input, textarea, [contenteditable="true"],
+pre, code, .xterm, .markdown-content,
+.selectable {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Ensure select-text propagates to all descendants (overrides * rule) */
+.select-text,
+.select-text * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+/* Ensure select-none wins inside select-text containers (buttons, icons, etc.) */
+.select-none,
+.select-none * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+body {
+  margin: 0;
+  background: var(--cosmos-bg);
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--cosmos-text);
+}
+
+/* Custom scrollbar for webkit */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e1e30;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2a2a40;
+}
+
+/* Custom scrollbar class */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #1e1e30;
+  border-radius: 10px;
+}
+
+/* xterm.js overrides */
+.xterm-helpers {
+  opacity: 0;
+  height: 0;
+  width: 0;
+}
+
+.xterm {
+  padding: 4px;
+}
+
+.xterm-viewport::-webkit-scrollbar {
+  width: 5px;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb {
+  background: #1e1e30;
+  border-radius: 10px;
+}
+
+/* Resize handle */
+.resize-handle {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.resize-handle:hover,
+.resize-handle:active {
+  background: var(--cosmos-accent);
+}
+
+/* Sidebar navigation active state */
+.sidebar-active {
+  background-color: rgba(99, 102, 241, 0.1);
+  border-right: 2px solid var(--cosmos-accent);
+}
+
+/* Form input base style */
+.form-input {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  background: var(--cosmos-card);
+  border: 1px solid var(--cosmos-border);
+  color: var(--cosmos-text);
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--cosmos-accent);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.3);
+}
+
+/* Code editor textarea */
+.code-editor {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background: var(--cosmos-bg);
+  border: 1px solid var(--cosmos-border);
+  color: #94a3b8;
+  outline: none;
+  resize: vertical;
+}
+
+.code-editor:focus {
+  border-color: var(--cosmos-accent);
+}
+
+/* Monospace font utility */
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Settings nav active state */
+.settings-nav-active {
+  background: var(--cosmos-card);
+  color: var(--cosmos-accent);
+  border-left: 2px solid var(--cosmos-accent);
+}
+
+/* Unsaved changes dot */
+.unsaved-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffb84d;
+}
+
+/* Table row hover effect */
+.task-row-hover:hover {
+  background-color: rgba(99, 102, 241, 0.05);
+}
+
+.table-row-hover:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Chart gradients */
+.gradient-blue {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.3) 0%, transparent 100%);
+}
+
+.gradient-orange {
+  background: linear-gradient(180deg, rgba(168, 85, 247, 0.3) 0%, transparent 100%);
+}
+
+/* Markdown content */
+.markdown-content {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+  margin-top: 0.75em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+
+.markdown-content p {
+  margin-bottom: 0.5em;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  padding-left: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.markdown-content code {
+  background: #1e1e30;
+  padding: 0.125em 0.375em;
+  border-radius: 0.25em;
+  font-size: 0.875em;
+}
+
+.markdown-content pre {
+  margin: 0;
+}
+
+.markdown-content pre code {
+  background: none;
+  padding: 0;
+}
+
+.markdown-content table {
+  border-collapse: collapse;
+  margin-bottom: 0.5em;
+  width: 100%;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid var(--cosmos-border);
+  padding: 0.375em 0.75em;
+  text-align: left;
+}
+
+.markdown-content th {
+  background: #1e1e30;
+  font-weight: 600;
+}
+
+/* Blinking cursor for streaming */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.streaming-cursor::after {
+  content: '▋';
+  animation: blink 1s step-end infinite;
+  color: var(--cosmos-accent);
+}
+
+/* Terminal cursor blink */
+.cursor-blink {
+  animation: blink 1s infinite;
+}
+
+/* macOS traffic light spacing */
+.titlebar-drag {
+  -webkit-app-region: drag;
+}
+
+.titlebar-no-drag {
+  -webkit-app-region: no-drag;
+}
