@@ -323,4 +323,23 @@ contextBridge.exposeInMainWorld('api', {
       return () => ipcRenderer.removeListener('stories:coverageProgress', handler)
     },
   },
+
+  // Memory
+  memory: {
+    list: (projectPath: string) => ipcRenderer.invoke('memory:list', projectPath),
+    add: (projectPath: string, content: string, importance: number) =>
+      ipcRenderer.invoke('memory:add', projectPath, content, importance),
+    delete: (id: string) => ipcRenderer.invoke('memory:delete', id),
+    update: (id: string, content: string) => ipcRenderer.invoke('memory:update', id, content),
+    search: (projectPath: string, query: string) => ipcRenderer.invoke('memory:search', projectPath, query),
+  },
+
+  // Notion
+  notion: {
+    testConnection: (token: string) => ipcRenderer.invoke('notion:testConnection', token),
+    logConversation: (token: string, projectName: string, summary: string, messages: unknown[]) =>
+      ipcRenderer.invoke('notion:logConversation', token, projectName, summary, messages),
+    getProjectContext: (token: string, projectName: string) =>
+      ipcRenderer.invoke('notion:getProjectContext', token, projectName),
+  },
 })

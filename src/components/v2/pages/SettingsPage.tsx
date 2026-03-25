@@ -6,9 +6,12 @@ import { FormToggle } from '../components/FormToggle'
 import { useAppStore } from '../../../store/useAppStore'
 import { useProjectStore } from '../../../store/useProjectStore'
 import { useLicenseStore } from '../../../store/useLicenseStore'
+import { useNotionStore } from '../../../store/useNotionStore'
+import { useGlobalMcpStore } from '../../../store/useGlobalMcpStore'
 import { MCP_SERVER_TEMPLATES } from '../../../data/mcp-server-templates'
 import { api } from '../../../api'
 import type { StorageStats } from '../../../types'
+import type { McpServer } from '../../../types'
 
 const LICENSE_SERVER = 'https://license.COSMOS.net/v1/licenses'
 
@@ -145,12 +148,14 @@ async function loadJiraStore() {
   }
 }
 
-type SettingsNav = 'account' | 'general' | 'integrations' | 'devices' | 'security' | 'advanced'
+type SettingsNav = 'account' | 'general' | 'integrations' | 'notion' | 'global-mcp' | 'devices' | 'security' | 'advanced'
 
 const allNavItems: { id: SettingsNav; label: string; icon: string; featureFlag?: string }[] = [
   { id: 'account', label: 'Account', icon: 'lucide:user' },
   { id: 'general', label: 'General', icon: 'lucide:settings' },
   { id: 'integrations', label: 'Integrations', icon: 'lucide:plug-zap' },
+  { id: 'notion', label: 'Notion', icon: 'lucide:book-text' },
+  { id: 'global-mcp', label: 'Global MCP', icon: 'lucide:puzzle' },
   { id: 'devices', label: 'Devices', icon: 'lucide:smartphone', featureFlag: 'devices' },
   { id: 'security', label: 'Security', icon: 'lucide:shield-check' },
   { id: 'advanced', label: 'Advanced', icon: 'lucide:code' },
@@ -492,6 +497,234 @@ function GeneralSection() {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function NotionSection() {
+  const token = useNotionStore((s) => s.token)
+  const connected = useNotionStore((s) => s.connected)
+  const connecting = useNotionStore((s) => s.connecting)
+  const workspaceName = useNotionStore((s) => s.workspaceName)
+  const error = useNotionStore((s) => s.error)
+  const autoLog = useNotionStore((s) => s.autoLogConversations)
+  const injectCtx = useNotionStore((s) => s.injectProjectContext)
+  const syncTasks = useNotionStore((s) => s.syncTasks)
+  const loadSettings = useNotionStore((s) => s.loadSettings)
+  const connect = useNotionStore((s) => s.connect)
+  const disconnect = useNotionStore((s) => s.disconnect)
+  const setAutoLog = useNotionStore((s) => s.setAutoLog)
+  const setInjectContext = useNotionStore((s) => s.setInjectContext)
+  const setSyncTasks = useNotionStore((s) => s.setSyncTasks)
+
+  const [tokenInput, setTokenInput] = useState(token)
+  const [showToken, setShowToken] = useState(false)
+
+  useEffect(() => { loadSettings() }, [loadSettings])
+  useEffect(() => { setTokenInput(token) }, [token])
+
+  const handleConnect = async () => {
+    if (tokenInput.trim()) await connect(tokenInput.trim())
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-base font-semibold text-white mb-1">Notion Integration</h2>
+        <p className="text-xs text-zinc-500">Auto-log conversations and inject project context from Notion.</p>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-sm text-zinc-300">Connection Status</label>
+          <span className={`flex items-center gap-1.5 text-xs font-medium ${connected ? 'text-green-400' : 'text-zinc-500'}`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-green-400' : 'bg-zinc-600'}`} />
+            {connected ? workspaceName : 'Not connected'}
+          </span>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs text-zinc-500">Integration Token</label>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <input
+                type={showToken ? 'text' : 'password'}
+                value={tokenInput}
+                onChange={(e) => setTokenInput(e.target.value)}
+                placeholder="ntn_xxxxxxxxxxxx"
+                className="w-full bg-cosmos-bg border border-cosmos-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-cosmos-accent/50"
+              />
+              <button
+                type="button"
+                onClick={() => setShowToken(!showToken)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+              >
+                <Icon icon={showToken ? 'lucide:eye-off' : 'lucide:eye'} className="text-sm" />
+              </button>
+            </div>
+            {connected ? (
+              <button
+                onClick={disconnect}
+                className="px-3 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-sm hover:bg-red-500/20 transition-all"
+              >
+                Disconnect
+              </button>
+            ) : (
+              <button
+                onClick={handleConnect}
+                disabled={connecting || !tokenInput.trim()}
+                className="px-4 py-2 bg-cosmos-accent text-white rounded-lg text-sm font-medium hover:bg-cosmos-accent/80 transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {connecting && <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />}
+                Connect
+              </button>
+            )}
+          </div>
+          {error && <p className="text-xs text-red-400">{error}</p>}
+          <p className="text-[10px] text-zinc-600">
+            Create an integration at notion.so/my-integrations, then share your workspace pages with it.
+          </p>
+        </div>
+      </div>
+
+      {connected && (
+        <div className="space-y-3 pt-2 border-t border-cosmos-border">
+          <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Sync Options</h3>
+          <div className="flex items-center justify-between py-1">
+            <div>
+              <p className="text-sm text-zinc-300">Auto-log conversations</p>
+              <p className="text-xs text-zinc-500">Append a summary to your Notion Changelog database</p>
+            </div>
+            <FormToggle checked={autoLog} onChange={setAutoLog} />
+          </div>
+          <div className="flex items-center justify-between py-1">
+            <div>
+              <p className="text-sm text-zinc-300">Inject project context</p>
+              <p className="text-xs text-zinc-500">Search Notion for related pages and prepend context</p>
+            </div>
+            <FormToggle checked={injectCtx} onChange={setInjectContext} />
+          </div>
+          <div className="flex items-center justify-between py-1">
+            <div>
+              <p className="text-sm text-zinc-300">Sync tasks</p>
+              <p className="text-xs text-zinc-500">Create and update tasks in Notion from COSMOS</p>
+            </div>
+            <FormToggle checked={syncTasks} onChange={setSyncTasks} />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function GlobalMcpSection() {
+  const servers = useGlobalMcpStore((s) => s.servers)
+  const loading = useGlobalMcpStore((s) => s.loading)
+  const loadServers = useGlobalMcpStore((s) => s.loadServers)
+  const addServer = useGlobalMcpStore((s) => s.addServer)
+  const removeServer = useGlobalMcpStore((s) => s.removeServer)
+  const toggleServer = useGlobalMcpStore((s) => s.toggleServer)
+  const [showAdd, setShowAdd] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newCommand, setNewCommand] = useState('')
+  const [newArgs, setNewArgs] = useState('')
+
+  useEffect(() => { loadServers() }, [loadServers])
+
+  const handleAdd = async () => {
+    if (!newName.trim() || !newCommand.trim()) return
+    const server: McpServer = {
+      id: crypto.randomUUID(),
+      name: newName.trim(),
+      icon: 'lucide:puzzle',
+      description: 'Global MCP server',
+      enabled: true,
+      config: {
+        type: 'stdio',
+        command: newCommand.trim(),
+        args: newArgs.trim() ? newArgs.trim().split(' ') : [],
+      },
+    }
+    await addServer(server)
+    setNewName(''); setNewCommand(''); setNewArgs(''); setShowAdd(false)
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-base font-semibold text-white mb-1">Global MCP Servers</h2>
+        <p className="text-xs text-zinc-500">These servers apply to ALL projects automatically — configure once, use everywhere.</p>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="w-5 h-5 border-2 border-cosmos-accent border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {servers.length === 0 && !showAdd && (
+            <p className="text-sm text-zinc-500 py-4 text-center">No global MCP servers configured.</p>
+          )}
+          {servers.map((server) => (
+            <div key={server.id} className="flex items-center gap-3 p-3 bg-cosmos-card border border-cosmos-border rounded-lg">
+              <div className={`w-2 h-2 rounded-full ${server.enabled ? 'bg-green-400' : 'bg-zinc-600'}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{server.name}</p>
+                <p className="text-[10px] text-zinc-500 truncate">
+                  {server.config.type === 'stdio' ? `${server.config.command} ${(server.config.args || []).join(' ')}`.trim() : server.config.url}
+                </p>
+              </div>
+              <button
+                onClick={() => toggleServer(server.id)}
+                className={`text-xs px-2 py-1 rounded transition-colors ${server.enabled ? 'text-green-400 hover:text-red-400' : 'text-zinc-500 hover:text-green-400'}`}
+              >
+                {server.enabled ? 'Enabled' : 'Disabled'}
+              </button>
+              <button
+                onClick={() => removeServer(server.id)}
+                className="text-zinc-500 hover:text-red-400 transition-colors"
+              >
+                <Icon icon="lucide:trash-2" className="text-sm" />
+              </button>
+            </div>
+          ))}
+
+          {showAdd && (
+            <div className="p-4 bg-cosmos-card border border-cosmos-accent/30 rounded-lg space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-zinc-500 mb-1 block">Name</label>
+                  <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="My MCP Server"
+                    className="w-full bg-cosmos-bg border border-cosmos-border rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cosmos-accent/50" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-zinc-500 mb-1 block">Command</label>
+                  <input value={newCommand} onChange={(e) => setNewCommand(e.target.value)} placeholder="npx"
+                    className="w-full bg-cosmos-bg border border-cosmos-border rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cosmos-accent/50" />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] text-zinc-500 mb-1 block">Args (space-separated)</label>
+                <input value={newArgs} onChange={(e) => setNewArgs(e.target.value)} placeholder="-y @my/mcp-server"
+                  className="w-full bg-cosmos-bg border border-cosmos-border rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cosmos-accent/50" />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setShowAdd(false)} className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white transition-colors">Cancel</button>
+                <button onClick={handleAdd} disabled={!newName.trim() || !newCommand.trim()}
+                  className="px-4 py-1.5 text-xs bg-cosmos-accent text-white rounded-lg hover:bg-cosmos-accent/80 disabled:opacity-50 transition-colors">
+                  Add Server
+                </button>
+              </div>
+            </div>
+          )}
+
+          <button onClick={() => setShowAdd(true)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-cosmos-border rounded-lg text-sm text-zinc-500 hover:text-white hover:border-cosmos-accent/40 transition-all">
+            <Icon icon="lucide:plus" className="text-sm" />
+            Add Global MCP Server
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -1216,6 +1449,8 @@ export default function SettingsPage() {
           {activeNav === 'account' && <AccountSection />}
           {activeNav === 'general' && <GeneralSection />}
           {activeNav === 'integrations' && <IntegrationsSection />}
+          {activeNav === 'notion' && <NotionSection />}
+          {activeNav === 'global-mcp' && <GlobalMcpSection />}
           {activeNav === 'devices' && <DevicesSection />}
           {activeNav === 'security' && <SecuritySection />}
           {activeNav === 'advanced' && <AdvancedSection />}

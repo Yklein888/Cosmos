@@ -3,9 +3,18 @@ import { BrowserWindow } from 'electron'
 
 const { autoUpdater } = pkg
 
+const UPDATE_INTERVAL_MS = 4 * 60 * 60 * 1000 // 4 hours
+
 export function setupAutoUpdater(mainWindow: BrowserWindow): void {
   // Don't check for updates in dev mode
   if (process.env.VITE_DEV_SERVER_URL) return
+
+  // Configure GitHub Releases as the update feed
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'Yklein888',
+    repo: 'Cosmos',
+  })
 
   autoUpdater.autoDownload = true
   autoUpdater.autoInstallOnAppQuit = true
@@ -53,6 +62,13 @@ export function setupAutoUpdater(mainWindow: BrowserWindow): void {
       console.error('[AutoUpdater] Check failed:', err.message)
     })
   }, 5000)
+
+  // Re-check every 4 hours
+  setInterval(() => {
+    autoUpdater.checkForUpdates().catch((err: Error) => {
+      console.error('[AutoUpdater] Periodic check failed:', err.message)
+    })
+  }, UPDATE_INTERVAL_MS)
 }
 
 export function installUpdate(): void {

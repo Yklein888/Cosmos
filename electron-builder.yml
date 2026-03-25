@@ -51,3 +51,9 @@ linux:
       arch:
         - x64
   category: Development
+
+publish:
+  - provider: github
+    owner: Yklein888
+    repo: Cosmos
+    releaseType: release

@@ -4,6 +4,7 @@ import { useAppStore, type AppView } from '../../store/useAppStore'
 import { useProjectStore } from '../../store/useProjectStore'
 import { useLicenseStore } from '../../store/useLicenseStore'
 import { useTaskStore } from '../../store/useTaskStore'
+import cosmosLogo from '../../assets/cosmos-logo.webp'
 
 interface NavItem {
   id: AppView
@@ -214,6 +215,8 @@ export function NavigationSidebar() {
   const advancedItems: NavItem[] = [
     { id: 'analytics', label: 'Performance', icon: 'lucide:activity' },
     { id: 'mcp', label: 'MCP Registry', icon: 'lucide:puzzle', badge: mcpCount },
+    { id: 'memory', label: 'Memory', icon: 'lucide:brain' },
+    { id: 'marketplace', label: 'Marketplace', icon: 'lucide:store' },
     { id: 'settings', label: 'Settings', icon: 'lucide:settings' },
   ]
 
@@ -225,38 +228,9 @@ export function NavigationSidebar() {
   return (
     <div className="w-64 h-full border-r border-cosmos-border cosmos-nebula-bg flex flex-col flex-shrink-0">
       {/* Logo */}
-      <div className="p-4 pb-2 titlebar-drag">
-        <div className="flex items-center gap-2.5 titlebar-no-drag">
-          {/* COSMOS orbital logo */}
-          <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <ellipse cx="14" cy="14" rx="12" ry="4.5" stroke="url(#cg1)" strokeWidth="1.2" opacity="0.7" transform="rotate(-35 14 14)" />
-              <ellipse cx="14" cy="14" rx="8.5" ry="3" stroke="url(#cg2)" strokeWidth="1" opacity="0.6" transform="rotate(25 14 14)" />
-              <circle cx="14" cy="14" r="2.5" fill="url(#ccore)" />
-              <circle cx="14" cy="14" r="4.5" fill="url(#cglow)" opacity="0.25" />
-              <defs>
-                <linearGradient id="cg1" x1="2" y1="14" x2="26" y2="14" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#6366f1" />
-                  <stop offset="100%" stopColor="#a855f7" />
-                </linearGradient>
-                <linearGradient id="cg2" x1="5" y1="14" x2="23" y2="14" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#a855f7" />
-                  <stop offset="100%" stopColor="#22d3ee" />
-                </linearGradient>
-                <radialGradient id="ccore" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#e2e8f0" />
-                  <stop offset="100%" stopColor="#94a3b8" />
-                </radialGradient>
-                <radialGradient id="cglow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#6366f1" />
-                  <stop offset="100%" stopColor="#6366f100" />
-                </radialGradient>
-              </defs>
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-sm font-bold text-cosmos-text leading-tight font-display tracking-widest uppercase">COSMOS</h1>
-          </div>
+      <div className="p-3 pb-2 titlebar-drag">
+        <div className="flex items-center gap-2 titlebar-no-drag">
+          <img src={cosmosLogo} alt="COSMOS" className="h-7 w-auto object-contain" />
         </div>
       </div>
 

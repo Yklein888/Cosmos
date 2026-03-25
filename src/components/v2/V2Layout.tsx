@@ -1,14 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import { NavigationSidebar } from './NavigationSidebar'
+import { ProjectTabBar } from './ProjectTabBar'
 import { HeaderBar } from './HeaderBar'
 import { ViewRouter } from './ViewRouter'
 import { CommandPalette } from './CommandPalette'
 import { SearchPanel } from '../chat/SearchPanel'
+import { AgentInsightsSidebar } from './AgentInsightsSidebar'
 import { useSearchStore } from '../../store/useSearchStore'
 import { useAppStore } from '../../store/useAppStore'
 import { useProjectStore } from '../../store/useProjectStore'
 import { useConversationStore } from '../../store/useConversationStore'
 import { useUsageStore } from '../../store/useUsageStore'
+import { useListeningAgentStore } from '../../store/useListeningAgentStore'
 
 export function V2Layout() {
   const activeView = useAppStore((s) => s.activeView)
@@ -114,13 +117,18 @@ export function V2Layout() {
     }
   }
 
+  const insightsOpen = useListeningAgentStore((s) => s.sidebarOpen)
+  const toggleInsights = useListeningAgentStore((s) => s.toggleSidebar)
+
   return (
     <div className="flex flex-1 overflow-hidden">
       <NavigationSidebar />
       <main className="flex-1 flex flex-col overflow-hidden">
+        <ProjectTabBar />
         <HeaderBar {...getActionProps()} onOpenPalette={openPalette} />
         <ViewRouter view={activeView} />
       </main>
+      {insightsOpen && <AgentInsightsSidebar onClose={toggleInsights} />}
       <CommandPalette open={paletteOpen} onClose={closePalette} />
       <SearchPanel />
     </div>

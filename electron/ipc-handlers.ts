@@ -755,6 +755,48 @@ export async function registerIpcHandlers(mainWindow: BrowserWindow, settingsSto
     })
   }
 
+  // ── Memory ──
+  ipcMain.handle('memory:list', async (_event, projectPath: string) => {
+    const { listMemories } = await import('./core/memory-manager')
+    return listMemories(projectPath)
+  })
+
+  ipcMain.handle('memory:add', async (_event, projectPath: string, content: string, importance: number) => {
+    const { addMemory } = await import('./core/memory-manager')
+    return addMemory(projectPath, content, importance)
+  })
+
+  ipcMain.handle('memory:delete', async (_event, id: string) => {
+    const { deleteMemory } = await import('./core/memory-manager')
+    return deleteMemory(id)
+  })
+
+  ipcMain.handle('memory:update', async (_event, id: string, content: string) => {
+    const { updateMemory } = await import('./core/memory-manager')
+    return updateMemory(id, content)
+  })
+
+  ipcMain.handle('memory:search', async (_event, projectPath: string, query: string) => {
+    const { searchMemories } = await import('./core/memory-manager')
+    return searchMemories(projectPath, query)
+  })
+
+  // ── Notion ──
+  ipcMain.handle('notion:testConnection', async (_event, token: string) => {
+    const { testConnection } = await import('./services/notion-service')
+    return testConnection(token)
+  })
+
+  ipcMain.handle('notion:logConversation', async (_event, token: string, projectName: string, summary: string, messages: unknown[]) => {
+    const { logConversation } = await import('./services/notion-service')
+    return logConversation(token, projectName, summary, messages)
+  })
+
+  ipcMain.handle('notion:getProjectContext', async (_event, token: string, projectName: string) => {
+    const { getProjectContext } = await import('./services/notion-service')
+    return getProjectContext(token, projectName)
+  })
+
   return { claudeProcess, database }
 }
 

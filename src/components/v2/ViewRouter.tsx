@@ -9,6 +9,8 @@ const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'))
 const McpPage = lazy(() => import('./pages/McpPage'))
 const ResultsPage = lazy(() => import('./pages/ResultsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const MarketplacePage = lazy(() => import('./pages/MarketplacePage'))
+const MemoryPage = lazy(() => import('./pages/MemoryPage'))
 
 function ViewLoading() {
   return (
@@ -29,6 +31,8 @@ export function ViewRouter({ view }: { view: AppView }) {
       {view === 'analytics' && <AnalyticsPage />}
       {view === 'mcp' && <McpPage />}
       {view === 'settings' && <SettingsPage />}
+      {view === 'marketplace' && <MarketplacePage />}
+      {view === 'memory' && <MemoryPage />}
     </Suspense>
   )
 }
