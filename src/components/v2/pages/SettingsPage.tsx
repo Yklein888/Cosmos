@@ -944,20 +944,19 @@ function IntegrationsSection() {
 }
 
 function AgentsSection() {
-  const agents = useProjectStore((s) => {
-    const active = s.activeProjectPath ? s.openProjects.find((p) => p.projectPath === s.activeProjectPath) : null
-    return active?.agents || []
-  })
-  const addAgent = useProjectStore((s) => s.addProjectAgent)
-  const removeAgent = useProjectStore((s) => s.removeProjectAgent)
+  const { openProjects, activeProjectPath, addProjectAgent, removeProjectAgent } = useProjectStore()
+
+  const agents = activeProjectPath
+    ? openProjects.find((p) => p.projectPath === activeProjectPath)?.agents || []
+    : []
 
   const [newAgentName, setNewAgentName] = useState('')
   const [newAgentUrl, setNewAgentUrl] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
 
   const handleAddAgent = () => {
-    if (!newAgentName.trim() || !newAgentUrl.trim()) return
-    addAgent({
+    if (!newAgentName.trim() || !newAgentUrl.trim() || !activeProjectPath) return
+    addProjectAgent({
       id: Date.now().toString(),
       name: newAgentName.trim(),
       url: newAgentUrl.trim(),
@@ -1040,7 +1039,7 @@ function AgentsSection() {
                 )}
               </div>
               <button
-                onClick={() => removeAgent(agent.id)}
+                onClick={() => removeProjectAgent(agent.id)}
                 className="px-3 py-1.5 text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 rounded-lg transition-colors text-xs"
               >
                 Remove
@@ -1054,12 +1053,11 @@ function AgentsSection() {
 }
 
 function McpServersSection() {
-  const mcpServers = useProjectStore((s) => {
-    const active = s.activeProjectPath ? s.openProjects.find((p) => p.projectPath === s.activeProjectPath) : null
-    return active?.mcpServers || []
-  })
-  const addMcpServer = useProjectStore((s) => s.addProjectMcpServer)
-  const removeMcpServer = useProjectStore((s) => s.removeProjectMcpServer)
+  const { openProjects, activeProjectPath, addProjectMcpServer, removeProjectMcpServer } = useProjectStore()
+
+  const mcpServers = activeProjectPath
+    ? openProjects.find((p) => p.projectPath === activeProjectPath)?.mcpServers || []
+    : []
 
   const [newServerName, setNewServerName] = useState('')
   const [newServerUrl, setNewServerUrl] = useState('')
@@ -1067,8 +1065,8 @@ function McpServersSection() {
   const [showAddForm, setShowAddForm] = useState(false)
 
   const handleAddServer = () => {
-    if (!newServerName.trim() || !newServerUrl.trim()) return
-    addMcpServer({
+    if (!newServerName.trim() || !newServerUrl.trim() || !activeProjectPath) return
+    addProjectMcpServer({
       id: Date.now().toString(),
       name: newServerName.trim(),
       url: newServerUrl.trim(),
@@ -1157,7 +1155,7 @@ function McpServersSection() {
                 </div>
               </div>
               <button
-                onClick={() => removeMcpServer(server.id)}
+                onClick={() => removeProjectMcpServer(server.id)}
                 className="px-3 py-1.5 text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 rounded-lg transition-colors text-xs"
               >
                 Remove
